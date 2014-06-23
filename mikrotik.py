@@ -4,7 +4,7 @@ import socket
 import hashlib
 from struct import pack, unpack
 
-__all__ = 'Trap Fatal ApiRos'.split()
+__all__ = 'Trap Fatal API'.split()
 
 class Trap(Exception): pass
 class Fatal(Exception): pass
@@ -40,7 +40,7 @@ class Query:
     def __call__(self):
         return self.api.talk(self.words)
 
-class ApiRos:
+class API:
     "Routeros api"
     def __init__(self, host, port='8728'):
         s = None
