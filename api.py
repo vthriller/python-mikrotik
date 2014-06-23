@@ -9,6 +9,37 @@ __all__ = 'Trap Fatal ApiRos'.split()
 class Trap(Exception): pass
 class Fatal(Exception): pass
 
+class Query:
+    def __init__(self, api, cmd):
+        self.api = api
+        self.words = [cmd]
+    def has(self, k):
+        self.words.append('?%s' % k)
+        return self
+    def hasnot(self, k):
+        self.words.append('?-%s' % k)
+        return self
+    def eq(self, k, v):
+        self.words.append('?=%s=%s' % (k, v))
+        return self
+    def lt(self, k, v):
+        self.words.append('?<%s=%s' % (k, v))
+        return self
+    def gt(self, k, v):
+        self.words.append('?>%s=%s' % (k, v))
+        return self
+    def n(self): # not is a reserved word
+        self.words.append('?#!')
+        return self
+    def o(self): # or is a reserved word
+        self.words.append('?#|')
+        return self
+    def a(self): # and is a reserved word
+        self.words.append('?#&')
+        return self
+    def __call__(self):
+        return self.api.talk(self.words)
+
 class ApiRos:
     "Routeros api"
     def __init__(self, host, port='8728'):
@@ -140,6 +171,9 @@ class ApiRos:
                 re.append(attrs)
             else: raise RuntimeError('Unknown reply %s' % reply)
             if reply == '!done': return re, done
+
+    def query(self, cmd):
+        return Query(self, cmd)
 
     ###
 

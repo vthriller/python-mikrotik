@@ -5,27 +5,17 @@ from sys import argv
 apiros = ApiRos(argv[1])
 apiros.login(argv[2], argv[3])
 
-addrs, _ = apiros.talk(['/ip/firewall/address-list/print'])
+addrs, _ = apiros.query('/ip/firewall/address-list/print').eq('disabled', 'false').eq('dynamic', 'false')()
 from collections import defaultdict
-addrdict = defaultdict(
-    lambda: defaultdict(
-        lambda: defaultdict(
-            lambda: []
-        )
-    )
-)
+addrdict = defaultdict(lambda: [])
 for i in addrs:
     list = i.pop('list')
-    disabled = i.pop('disabled') == 'true'
-    dynamic = i.pop('dynamic') == 'true'
-    addrdict[list][disabled][dynamic].append((i['.id'], i['address']))
+    addrdict[list].append((i['.id'], i['address']))
 
-for list, ad2 in addrdict.items():
-    for disabled, ad3 in ad2.items():
-        for dynamic, addrs in ad3.items():
-            print('%s disabled: %s dynamic: %s' % (list, disabled, dynamic))
-            for id, addr in addrs:
-                print('\t%s %s' % (id, addr))
+for list, addrs in addrdict.items():
+    print('%s' % list)
+    for id, addr in addrs:
+        print('\t%s %s' % (id, addr))
 
 print(apiros.talk([
     '/ip/address/add',
