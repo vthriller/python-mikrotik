@@ -1,5 +1,6 @@
 #!/usr/bin/python3
-import sys, posix, time, binascii, socket, select
+import binascii
+import socket
 import hashlib
 from struct import pack, unpack
 
@@ -125,33 +126,4 @@ class ApiRos:
             if s == '': raise RuntimeError("connection closed by remote end")
             ret += s
         return ret
-
-def main():
-    apiros = ApiRos(sys.argv[1])
-    apiros.login(sys.argv[2], sys.argv[3])
-
-    inputsentence = []
-
-    while 1:
-        r = select.select([apiros.sk, sys.stdin], [], [], None)
-        if apiros.sk in r[0]:
-            # something to read in socket, read sentence
-            x = apiros.readSentence()
-            print(x)
-
-        if sys.stdin in r[0]:
-            # read line from input and strip off newline
-            l = sys.stdin.readline()
-            l = l[:-1]
-
-            # if empty line, send sentence and start with new
-            # otherwise append to input sentence
-            if l == '':
-                apiros.writeSentence(inputsentence)
-                inputsentence = []
-            else:
-                inputsentence.append(l)
-
-if __name__ == '__main__':
-    main()
 
