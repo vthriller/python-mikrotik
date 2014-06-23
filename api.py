@@ -5,8 +5,26 @@ from struct import pack, unpack
 
 class ApiRos:
     "Routeros api"
-    def __init__(self, sk):
-        self.sk = sk
+    def __init__(self, host, port='8728'):
+        s = None
+        for af, socktype, proto, canonname, sa in socket.getaddrinfo(
+            host, port,
+            socket.AF_UNSPEC, socket.SOCK_STREAM,
+        ):
+            try: s = socket.socket(af, socktype, proto)
+            except (socket.error, msg):
+                s = None
+                continue
+            try: s.connect(sa)
+            except (socket.error, msg):
+                s.close()
+                s = None
+                continue
+            break
+        if s is None:
+            raise RuntimeError('could not open socket')
+
+        self.sk = s
         self.currenttag = 0
         
     def login(self, username, pwd):
@@ -111,33 +129,14 @@ class ApiRos:
         return ret
 
 def main():
-    s = None
-    for res in socket.getaddrinfo(sys.argv[1], "8728", socket.AF_UNSPEC, socket.SOCK_STREAM):
-        af, socktype, proto, canonname, sa = res
-        try:
-             s = socket.socket(af, socktype, proto)
-        except (socket.error, msg):
-            s = None
-            continue
-        try:
-            s.connect(sa)
-        except (socket.error, msg):
-            s.close()
-            s = None
-            continue
-        break
-    if s is None:
-        print ('could not open socket')
-        sys.exit(1)
-
-    apiros = ApiRos(s);
-    apiros.login(sys.argv[2], sys.argv[3]);
+    apiros = ApiRos(sys.argv[1])
+    apiros.login(sys.argv[2], sys.argv[3])
 
     inputsentence = []
 
     while 1:
-        r = select.select([s, sys.stdin], [], [], None)
-        if s in r[0]:
+        r = select.select([apiros.sk, sys.stdin], [], [], None)
+        if apiros.sk in r[0]:
             # something to read in socket, read sentence
             x = apiros.readSentence()
 
