@@ -58,7 +58,7 @@ class ApiRos:
         self.writeStr(w)
 
     def readWord(self):
-        ret = self.readStr(self.readLen())
+        ret = self.readStr(self.readLen()).decode('utf-8', 'replace')
         print((">>> " + ret))
         return ret
 
@@ -88,7 +88,7 @@ class ApiRos:
         if (c & 0xF8) == 0xF0: return 5
 
     def readLen(self):              
-        c = self.readStr(1).encode()
+        c = self.readStr(1)
         len_extra = self.len_len(c) - 1
         if len_extra: c += self.readStr(len_extra)
 
@@ -103,11 +103,11 @@ class ApiRos:
             if r: raise RuntimeError("connection closed by remote end")
 
     def readStr(self, length):      
-        ret = ''
+        ret = b''
         while len(ret) < length:
             s = self.sk.recv(length - len(ret))
             if s == '': raise RuntimeError("connection closed by remote end")
-            ret += s.decode('UTF-8', 'replace')
+            ret += s
         return ret
 
 def main():
