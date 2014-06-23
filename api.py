@@ -28,56 +28,21 @@ class ApiRos:
         self.sk = s
         self.currenttag = 0
 
-    def login(self, username, pwd):
-        for repl, attrs in self.talk(["/login"]):
-            chal = binascii.unhexlify((attrs['=ret']).encode('UTF-8'))
-        md = hashlib.md5()
-        md.update(b'\x00')
-        md.update(pwd.encode('UTF-8'))
-        md.update(chal)
-        self.talk(["/login", "=name=" + username,
-                   "=response=00" + binascii.hexlify(md.digest()).decode('UTF-8') ])
+    ###
 
-    def talk(self, words):
-        if self.write_sentence(words) == 0: return
-        r = []
-        while 1:
-            i = self.read_sentence();
-            if len(i) == 0: continue
-            reply = i[0]
-            attrs = {}
-            for w in i[1:]:
-                j = w.find('=', 1)
-                if (j == -1):
-                    attrs[w] = ''
-                else:
-                    attrs[w[:j]] = w[j+1:]
-            r.append((reply, attrs))
-            if reply == '!done': return r
-
-    def write_sentence(self, words):
-        ret = 0
-        for w in words:
-            self.write_word(w)
-            ret += 1
-        self.write_word('')
+    def read(self, length):
+        ret = b''
+        while len(ret) < length:
+            s = self.sk.recv(length - len(ret))
+            if s == '': raise RuntimeError("connection closed by remote end")
+            ret += s
         return ret
 
-    def read_sentence(self):
-        r = []
-        while 1:
-            w = self.read_word()
-            if w == '': return r
-            r.append(w)
+    def write(self, str):
+            r = self.sk.sendall(str)
+            if r: raise RuntimeError("connection closed by remote end")
 
-    def write_word(self, w):
-        w = w.encode('utf-8')
-        self.write(self.len(w))
-        self.write(w)
-
-    def read_word(self):
-        ret = self.read(self.read_len()).decode('utf-8', 'replace')
-        return ret
+    ###
 
     def len(self, l):
         l = len(l)
@@ -115,15 +80,61 @@ class ApiRos:
         if len(c) == 4: return unpack('>I',        c)[0] & ~0xE0000000
         if len(c) == 5: return unpack('>I',        c[1:])[0]
 
-    def write(self, str):
-            r = self.sk.sendall(str)
-            if r: raise RuntimeError("connection closed by remote end")
+    ###
 
-    def read(self, length):
-        ret = b''
-        while len(ret) < length:
-            s = self.sk.recv(length - len(ret))
-            if s == '': raise RuntimeError("connection closed by remote end")
-            ret += s
+    def read_word(self):
+        ret = self.read(self.read_len()).decode('utf-8', 'replace')
         return ret
 
+    def write_word(self, w):
+        w = w.encode('utf-8')
+        self.write(self.len(w))
+        self.write(w)
+
+    ###
+
+    def read_sentence(self):
+        r = []
+        while 1:
+            w = self.read_word()
+            if w == '': return r
+            r.append(w)
+
+    def write_sentence(self, words):
+        ret = 0
+        for w in words:
+            self.write_word(w)
+            ret += 1
+        self.write_word('')
+        return ret
+
+    ###
+
+    def talk(self, words):
+        if self.write_sentence(words) == 0: return
+        r = []
+        while 1:
+            i = self.read_sentence();
+            if len(i) == 0: continue
+            reply = i[0]
+            attrs = {}
+            for w in i[1:]:
+                j = w.find('=', 1)
+                if (j == -1):
+                    attrs[w] = ''
+                else:
+                    attrs[w[:j]] = w[j+1:]
+            r.append((reply, attrs))
+            if reply == '!done': return r
+
+    ###
+
+    def login(self, username, pwd):
+        for repl, attrs in self.talk(["/login"]):
+            chal = binascii.unhexlify((attrs['=ret']).encode('UTF-8'))
+        md = hashlib.md5()
+        md.update(b'\x00')
+        md.update(pwd.encode('UTF-8'))
+        md.update(chal)
+        self.talk(["/login", "=name=" + username,
+                   "=response=00" + binascii.hexlify(md.digest()).decode('UTF-8') ])
