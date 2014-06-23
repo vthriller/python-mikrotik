@@ -27,7 +27,7 @@ class ApiRos:
 
         self.sk = s
         self.currenttag = 0
-        
+
     def login(self, username, pwd):
         for repl, attrs in self.talk(["/login"]):
             chal = binascii.unhexlify((attrs['=ret']).encode('UTF-8'))
@@ -69,7 +69,7 @@ class ApiRos:
             w = self.readWord()
             if w == '': return r
             r.append(w)
-            
+
     def writeWord(self, w):
         w = w.encode('utf-8')
         self.writeStr(self.len(w))
@@ -89,10 +89,10 @@ class ApiRos:
         elif l < 0x200000:
             l |= 0xC00000
             return pack('>I', l)[:3]
-        elif l < 0x10000000:        
-            l |= 0xE0000000         
+        elif l < 0x10000000:
+            l |= 0xE0000000
             return pack('>I', l)
-        else:                       
+        else:
             return '\xf0' + pack('>I', l)
 
     def len_len(self, c):
@@ -104,7 +104,7 @@ class ApiRos:
         if (c & 0xF0) == 0xE0: return 4
         if (c & 0xF8) == 0xF0: return 5
 
-    def readLen(self):              
+    def readLen(self):
         c = self.readStr(1)
         len_extra = self.len_len(c) - 1
         if len_extra: c += self.readStr(len_extra)
@@ -115,11 +115,11 @@ class ApiRos:
         if len(c) == 4: return unpack('>I',        c)[0] & ~0xE0000000
         if len(c) == 5: return unpack('>I',        c[1:])[0]
 
-    def writeStr(self, str):        
+    def writeStr(self, str):
             r = self.sk.sendall(str)
             if r: raise RuntimeError("connection closed by remote end")
 
-    def readStr(self, length):      
+    def readStr(self, length):
         ret = b''
         while len(ret) < length:
             s = self.sk.recv(length - len(ret))
