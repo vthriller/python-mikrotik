@@ -70,14 +70,12 @@ class ApiRos:
             r.append(w)
             
     def writeWord(self, w):
-        print(("<<< " + w))
         w = w.encode('utf-8')
         self.writeStr(self.len(w))
         self.writeStr(w)
 
     def readWord(self):
         ret = self.readStr(self.readLen()).decode('utf-8', 'replace')
-        print((">>> " + ret))
         return ret
 
     def len(self, l):
@@ -139,6 +137,7 @@ def main():
         if apiros.sk in r[0]:
             # something to read in socket, read sentence
             x = apiros.readSentence()
+            print(x)
 
         if sys.stdin in r[0]:
             # read line from input and strip off newline
