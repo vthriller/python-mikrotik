@@ -101,17 +101,14 @@ class ApiRos:
             r.append(w)
 
     def write_sentence(self, words):
-        ret = 0
         for w in words:
             self.write_word(w)
-            ret += 1
         self.write_word('')
-        return ret
 
     ###
 
     def talk(self, words):
-        if self.write_sentence(words) == 0: return
+        self.write_sentence(words)
         r = []
         while 1:
             i = self.read_sentence();
