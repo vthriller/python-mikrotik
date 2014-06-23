@@ -16,10 +16,10 @@ addrdict = defaultdict(
     )
 )
 for i in addrs:
-    list = i.pop('=list')
-    disabled = i.pop('=disabled') == 'true'
-    dynamic = i.pop('=dynamic') == 'true'
-    addrdict[list][disabled][dynamic].append((i['=.id'], i['=address']))
+    list = i.pop('list')
+    disabled = i.pop('disabled') == 'true'
+    dynamic = i.pop('dynamic') == 'true'
+    addrdict[list][disabled][dynamic].append((i['.id'], i['address']))
 
 for list, ad2 in addrdict.items():
     for disabled, ad3 in ad2.items():

@@ -109,26 +109,27 @@ class ApiRos:
 
     def talk(self, words):
         self.write_sentence(words)
-        r = []
+        re = []
         while 1:
-            i = self.read_sentence();
-            if len(i) == 0: continue
-            reply = i[0]
+            snt = self.read_sentence()
+            if len(snt) == 0: continue
+            reply = snt[0]
             attrs = {}
-            for w in i[1:]:
-                j = w.find('=', 1)
-                if (j == -1):
-                    attrs[w] = ''
-                else:
-                    attrs[w[:j]] = w[j+1:]
-            r.append((reply, attrs))
-            if reply == '!done': return r
+            for w in snt[1:]:
+                w = w[1:] # drop leading '='
+                try:
+                    k, v = w.split('=', 1)
+                except TypeError:
+                    k, v = w, ''
+                attrs[k] = v
+            re.append((reply, attrs))
+            if reply == '!done': return re
 
     ###
 
     def login(self, username, pwd):
         for repl, attrs in self.talk(["/login"]):
-            chal = binascii.unhexlify((attrs['=ret']).encode('UTF-8'))
+            chal = binascii.unhexlify((attrs['ret']).encode('UTF-8'))
         md = hashlib.md5()
         md.update(b'\x00')
         md.update(pwd.encode('UTF-8'))
