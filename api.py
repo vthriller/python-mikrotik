@@ -119,11 +119,8 @@ class ApiRos:
         return c                    
 
     def writeStr(self, str):        
-        n = 0;                      
-        while n < len(str):         
-            r = self.sk.send(bytes(str[n:], 'UTF-8'))
-            if r == 0: raise RuntimeError("connection closed by remote end")
-            n += r                  
+            r = self.sk.sendall(str.encode('UTF-8'))
+            if r: raise RuntimeError("connection closed by remote end")
 
     def readStr(self, length):      
         ret = ''
