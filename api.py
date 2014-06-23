@@ -39,10 +39,10 @@ class ApiRos:
                    "=response=00" + binascii.hexlify(md.digest()).decode('UTF-8') ])
 
     def talk(self, words):
-        if self.writeSentence(words) == 0: return
+        if self.write_sentence(words) == 0: return
         r = []
         while 1:
-            i = self.readSentence();
+            i = self.read_sentence();
             if len(i) == 0: continue
             reply = i[0]
             attrs = {}
@@ -55,28 +55,28 @@ class ApiRos:
             r.append((reply, attrs))
             if reply == '!done': return r
 
-    def writeSentence(self, words):
+    def write_sentence(self, words):
         ret = 0
         for w in words:
-            self.writeWord(w)
+            self.write_word(w)
             ret += 1
-        self.writeWord('')
+        self.write_word('')
         return ret
 
-    def readSentence(self):
+    def read_sentence(self):
         r = []
         while 1:
-            w = self.readWord()
+            w = self.read_word()
             if w == '': return r
             r.append(w)
 
-    def writeWord(self, w):
+    def write_word(self, w):
         w = w.encode('utf-8')
-        self.writeStr(self.len(w))
-        self.writeStr(w)
+        self.write(self.len(w))
+        self.write(w)
 
-    def readWord(self):
-        ret = self.readStr(self.readLen()).decode('utf-8', 'replace')
+    def read_word(self):
+        ret = self.read(self.read_len()).decode('utf-8', 'replace')
         return ret
 
     def len(self, l):
@@ -104,10 +104,10 @@ class ApiRos:
         if (c & 0xF0) == 0xE0: return 4
         if (c & 0xF8) == 0xF0: return 5
 
-    def readLen(self):
-        c = self.readStr(1)
+    def read_len(self):
+        c = self.read(1)
         len_extra = self.len_len(c) - 1
-        if len_extra: c += self.readStr(len_extra)
+        if len_extra: c += self.read(len_extra)
 
         if len(c) == 1: return unpack('>B',        c)[0]
         if len(c) == 2: return unpack('>H',        c)[0] & ~0x8000
@@ -115,11 +115,11 @@ class ApiRos:
         if len(c) == 4: return unpack('>I',        c)[0] & ~0xE0000000
         if len(c) == 5: return unpack('>I',        c[1:])[0]
 
-    def writeStr(self, str):
+    def write(self, str):
             r = self.sk.sendall(str)
             if r: raise RuntimeError("connection closed by remote end")
 
-    def readStr(self, length):
+    def read(self, length):
         ret = b''
         while len(ret) < length:
             s = self.sk.recv(length - len(ret))
