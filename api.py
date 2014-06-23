@@ -1,7 +1,7 @@
 #!/usr/bin/python3
-
 import sys, posix, time, binascii, socket, select
 import hashlib
+from struct import pack
 
 class ApiRos:
     "Routeros api"
@@ -53,7 +53,7 @@ class ApiRos:
             
     def writeWord(self, w):
         print(("<<< " + w))
-        self.writeLen(len(w))
+        self.writeStr(self.len(w))
         self.writeStr(w)
 
     def readWord(self):
@@ -61,30 +61,21 @@ class ApiRos:
         print((">>> " + ret))
         return ret
 
-    def writeLen(self, l):
+    def len(self, l):
+        l = len(l)
         if l < 0x80:
-            self.writeStr(chr(l))
+            return pack('>B', l)
         elif l < 0x4000:
             l |= 0x8000
-            self.writeStr(chr((l >> 8) & 0xFF))
-            self.writeStr(chr(l & 0xFF))
+            return pack('>H', l)
         elif l < 0x200000:
             l |= 0xC00000
-            self.writeStr(chr((l >> 16) & 0xFF))
-            self.writeStr(chr((l >> 8) & 0xFF))
-            self.writeStr(chr(l & 0xFF))
+            return pack('>I', l)[:3]
         elif l < 0x10000000:        
             l |= 0xE0000000         
-            self.writeStr(chr((l >> 24) & 0xFF))
-            self.writeStr(chr((l >> 16) & 0xFF))
-            self.writeStr(chr((l >> 8) & 0xFF))
-            self.writeStr(chr(l & 0xFF))
+            return pack('>I', l)
         else:                       
-            self.writeStr(chr(0xF0))
-            self.writeStr(chr((l >> 24) & 0xFF))
-            self.writeStr(chr((l >> 16) & 0xFF))
-            self.writeStr(chr((l >> 8) & 0xFF))
-            self.writeStr(chr(l & 0xFF))
+            return '\xf0' + pack('>I', l)
 
     def readLen(self):              
         c = ord(self.readStr(1))    
@@ -119,7 +110,9 @@ class ApiRos:
         return c                    
 
     def writeStr(self, str):        
-            r = self.sk.sendall(str.encode('UTF-8'))
+            if not isinstance(str, bytes):
+                str = str.encode('utf-8')
+            r = self.sk.sendall(str)
             if r: raise RuntimeError("connection closed by remote end")
 
     def readStr(self, length):      
