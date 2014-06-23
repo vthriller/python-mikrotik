@@ -4,6 +4,8 @@ import socket
 import hashlib
 from struct import pack, unpack
 
+__all__ = 'Trap Fatal ApiRos'.split()
+
 class Trap(Exception): pass
 class Fatal(Exception): pass
 
