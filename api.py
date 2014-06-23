@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 import sys, posix, time, binascii, socket, select
 import hashlib
-from struct import pack
+from struct import pack, unpack
 
 class ApiRos:
     "Routeros api"
@@ -78,37 +78,25 @@ class ApiRos:
         else:                       
             return '\xf0' + pack('>I', l)
 
+    def len_len(self, c):
+        ''' `c` is a len's first byte '''
+        c = ord(c)
+        if (c & 0x80) == 0x00: return 1
+        if (c & 0xC0) == 0x80: return 2
+        if (c & 0xE0) == 0xC0: return 3
+        if (c & 0xF0) == 0xE0: return 4
+        if (c & 0xF8) == 0xF0: return 5
+
     def readLen(self):              
-        c = ord(self.readStr(1))    
-        if (c & 0x80) == 0x00:      
-            pass                    
-        elif (c & 0xC0) == 0x80:    
-            c &= ~0xC0              
-            c <<= 8                 
-            c += ord(self.readStr(1))    
-        elif (c & 0xE0) == 0xC0:    
-            c &= ~0xE0              
-            c <<= 8                 
-            c += ord(self.readStr(1))    
-            c <<= 8                 
-            c += ord(self.readStr(1))    
-        elif (c & 0xF0) == 0xE0:    
-            c &= ~0xF0              
-            c <<= 8                 
-            c += ord(self.readStr(1))    
-            c <<= 8                 
-            c += ord(self.readStr(1))    
-            c <<= 8                 
-            c += ord(self.readStr(1))    
-        elif (c & 0xF8) == 0xF0:    
-            c = ord(self.readStr(1))     
-            c <<= 8                 
-            c += ord(self.readStr(1))    
-            c <<= 8                 
-            c += ord(self.readStr(1))    
-            c <<= 8                 
-            c += ord(self.readStr(1))    
-        return c                    
+        c = self.readStr(1).encode()
+        len_extra = self.len_len(c) - 1
+        if len_extra: c += self.readStr(len_extra)
+
+        if len(c) == 1: return unpack('>B',        c)[0]
+        if len(c) == 2: return unpack('>H',        c)[0] & ~0x8000
+        if len(c) == 3: return unpack('>I', '\x00'+c)[0] & ~0xC00000
+        if len(c) == 4: return unpack('>I',        c)[0] & ~0xE0000000
+        if len(c) == 5: return unpack('>I',        c[1:])[0]
 
     def writeStr(self, str):        
             r = self.sk.sendall(str)
