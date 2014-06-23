@@ -5,8 +5,7 @@ from sys import argv
 apiros = ApiRos(argv[1])
 apiros.login(argv[2], argv[3])
 
-addrs = apiros.talk(['/ip/firewall/address-list/print'])
-addrs = [attr for r, attr in addrs if r == '!re']
+addrs, _ = apiros.talk(['/ip/firewall/address-list/print'])
 from collections import defaultdict
 addrdict = defaultdict(
     lambda: defaultdict(
@@ -27,3 +26,9 @@ for list, ad2 in addrdict.items():
             print('%s disabled: %s dynamic: %s' % (list, disabled, dynamic))
             for id, addr in addrs:
                 print('\t%s %s' % (id, addr))
+
+print(apiros.talk([
+    '/ip/address/add',
+    '=address=192.168.88.1',
+    '=interface=asdf',
+]))

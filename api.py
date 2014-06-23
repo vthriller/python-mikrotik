@@ -4,6 +4,9 @@ import socket
 import hashlib
 from struct import pack, unpack
 
+class Trap(Exception): pass
+class Fatal(Exception): pass
+
 class ApiRos:
     "Routeros api"
     def __init__(self, host, port='8728'):
@@ -110,6 +113,7 @@ class ApiRos:
     def talk(self, words):
         self.write_sentence(words)
         re = []
+        done = {}
         while 1:
             snt = self.read_sentence()
             if len(snt) == 0: continue
@@ -122,14 +126,24 @@ class ApiRos:
                 except TypeError:
                     k, v = w, ''
                 attrs[k] = v
-            re.append((reply, attrs))
-            if reply == '!done': return re
+
+            if reply == '!trap':
+                raise Trap(attrs['message'])
+            if reply == '!fatal':
+                self.sk.close()
+                raise Fatal() # TODO message?
+            if reply == '!done':
+                done = attrs
+            elif reply == '!re':
+                re.append(attrs)
+            else: raise RuntimeError('Unknown reply %s' % reply)
+            if reply == '!done': return re, done
 
     ###
 
     def login(self, username, pwd):
-        for repl, attrs in self.talk(["/login"]):
-            chal = binascii.unhexlify((attrs['ret']).encode('UTF-8'))
+        re, done = self.talk(["/login"])
+        chal = binascii.unhexlify((done['ret']).encode('UTF-8'))
         md = hashlib.md5()
         md.update(b'\x00')
         md.update(pwd.encode('UTF-8'))
