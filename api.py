@@ -53,6 +53,7 @@ class ApiRos:
             
     def writeWord(self, w):
         print(("<<< " + w))
+        w = w.encode('utf-8')
         self.writeStr(self.len(w))
         self.writeStr(w)
 
@@ -110,8 +111,6 @@ class ApiRos:
         return c                    
 
     def writeStr(self, str):        
-            if not isinstance(str, bytes):
-                str = str.encode('utf-8')
             r = self.sk.sendall(str)
             if r: raise RuntimeError("connection closed by remote end")
 
